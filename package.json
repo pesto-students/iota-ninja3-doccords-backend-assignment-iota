@@ -1,0 +1,56 @@
+{
+  "name": "doccords-api",
+  "version": "1.0.0",
+  "description": "api for doccords app",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "lint": "eslint ./",
+    "lint-fix": "eslint ./ --fix",
+    "format": "prettier --config .prettierrc.json --write \"**/*.{js,json,md}\"",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://Elangodevguy@github.com/Elangodevguy/doccords-api.git"
+  },
+  "author": "Elango and Navtej",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Elangodevguy/doccords-api/issues"
+  },
+  "homepage": "https://github.com/Elangodevguy/doccords-api#readme",
+  "dependencies": {
+    "@google-cloud/storage": "^5.8.5",
+    "body-parser": "^1.19.0",
+    "busboy": "^0.3.1",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "firebase": "^8.6.7",
+    "firebase-admin": "^9.8.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.2",
+    "uuidv4": "^6.2.10"
+  },
+  "devDependencies": {
+    "eslint": "^7.27.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "husky": "^6.0.0",
+    "lint-staged": "^11.0.0",
+    "nodemon": "^2.0.7",
+    "prettier": "2.3.0"
+  },
+  "lint-staged": {
+    "src/**/*.{js,json}": [
+      "prettier --write",
+      "eslint --cache --fix",
+      "git add"
+    ],
+    "*.js": "eslint --cache --fix",
+    "*.{js,json,md}": "prettier --write"
+  }
+}
