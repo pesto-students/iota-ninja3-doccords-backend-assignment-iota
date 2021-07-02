@@ -10,5 +10,18 @@ router
   .get(userController.getUserDetail)
   .post(userController.createUser)
 
+router
+  .route('/profiles')
+  .get(userController.getAllProfilesByUser)
+  .post(userController.createProfile)
+  .delete(userController.deleteProfilesAndDocs)
+
+router.route('/profiles/:profileId').put(userController.updateProfile)
+
+router
+  .route('/documents')
+  .get(userController.getAllDocumentsByUser)
+  .post(userController.createDocument)
+
 router.route('/upload/file').post(uploader.single('image'), imageUploader)
 module.exports = router
