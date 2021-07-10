@@ -3,6 +3,7 @@ const { db } = require('../util/admin')
 const config = require('../util/config')
 const noImg = 'no-img.png'
 const nodemailer = require('nodemailer')
+const Email = require('email-templates')
 // const transporter = nodemailer.createTransport({
 //   service: 'gmail',
 //   auth: {
@@ -24,6 +25,17 @@ const transporter = nodemailer.createTransport({
     pass: '123456789qwe$$'
   }
 })
+
+const emailTemplate = new Email({
+  views: { root: './emails', options: { extension: 'ejs' } },
+  message: {
+    from: 'doccords@gmail.com'
+  },
+  preview: false,
+  send: true,
+  transport: transporter
+})
+
 exports.getUserDetail = (req, res) => {
   db.doc(`/users/${req.user.decodedToken.uid}`)
     .get()
@@ -223,9 +235,6 @@ exports.shareDocuments = (req, res) => {
   if (documentsList.length > 0) {
     documentsList.forEach(async (document) => {
       const list = await db.doc(`/documents/${document}`).get()
-      console.log(document)
-      console.log(list.data().sharedList)
-      console.log(list.data().sharedList.includes(email))
       if (!list.data().sharedList.includes(email)) {
         db.collection('documents')
           .doc(document)
@@ -235,20 +244,47 @@ exports.shareDocuments = (req, res) => {
     db.collection('/shares')
       .add({ documentsList })
       .then((doc) => {
-        const mailOptions = {
-          from: 'doccords@gmail.com',
-          to: email,
-          subject: 'This mail is from doccords',
-          text: `Hi from your nodemailer project ${doc.id}`
-        }
-        transporter.sendMail(mailOptions, function (err, data) {
-          if (err) {
-            console.log('Error ' + err)
-          } else {
-            console.log('Email sent successfully')
-          }
-        })
-        res.status(200).json({ success: true })
+        let name = 'ela'
+        // const mailOptions = {
+        //   from: 'doccords@gmail.com',
+        //   to: email,
+        //   subject: 'This mail is from doccords',
+        //   text: `Hi from your nodemailer project ${doc.id}`
+        // }
+        // transporter.sendMail(mailOptions, function (err, data) {
+        //   if (err) {
+        //     console.log('Error ' + err)
+        //   } else {
+        //     console.log('Email sent successfully')
+        //   }
+        // })
+        db.doc(`/users/${req.user.decodedToken.uid}`)
+          .get()
+          .then((doc) => {
+            if (doc.exists) {
+              name = doc.data().profileName
+            } else {
+              res.status(404).json({ user: 'usr not found' })
+            }
+          })
+        emailTemplate
+          .send({
+            template: 'share',
+            message: {
+              to: email
+            },
+            locals: {
+              name,
+              count: documentsList.length,
+              id: doc.id
+            }
+          })
+          .then(() => {
+            console.log('success email')
+            return res.status(200).json({ success: true })
+          })
+          .catch('Error email', console.error)
+        // return res.status(200).json({ success: true })
       })
   }
 }
