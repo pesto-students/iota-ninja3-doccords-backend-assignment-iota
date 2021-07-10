@@ -288,3 +288,27 @@ exports.shareDocuments = (req, res) => {
       })
   }
 }
+exports.getTopHealthTopicsByUser = (req, res) => {
+  db.collection('profiles')
+    .where('userId', '==', req.user.decodedToken.uid)
+    .get()
+    .then((data) => {
+      const topHealthTopics = {}
+      data.forEach((doc) => {
+        if (doc.data().knownIssues) {
+          doc.data().knownIssues.forEach((issueId) => {
+            if (topHealthTopics[issueId]) {
+              topHealthTopics[issueId] = topHealthTopics[issueId] + 1
+            } else {
+              topHealthTopics[issueId] = 1
+            }
+          })
+        }
+      })
+      res.json(topHealthTopics)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}

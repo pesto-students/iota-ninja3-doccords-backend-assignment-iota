@@ -6,7 +6,7 @@ const imageUploader = require('../util/imageUploader')
 const router = express.Router()
 
 router.route('/').get(userController.getUserDetail).post(userController.createUser)
-
+router.route('/topHealthTopics').get(userController.getTopHealthTopicsByUser)
 router
   .route('/profiles')
   .get(userController.getAllProfilesByUser)

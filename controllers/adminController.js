@@ -195,3 +195,23 @@ exports.updateArticle = (req, res) => {
       res.status(500).json({ error: 'Something went wrong' })
     })
 }
+
+exports.getTopHealthTopics = (req, res) => {
+  db.collection('documents')
+    .get()
+    .then((data) => {
+      const topHealthTopics = {}
+      data.forEach((doc) => {
+        if (topHealthTopics[doc.data().healthTopicId]) {
+          topHealthTopics[doc.data().healthTopicId] = topHealthTopics[doc.data().healthTopicId] + 1
+        } else {
+          topHealthTopics[doc.data().healthTopicId] = 1
+        }
+      })
+      return res.json(topHealthTopics)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}

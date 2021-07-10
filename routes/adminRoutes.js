@@ -12,6 +12,7 @@ router
   .delete(adminController.deleteHealthTopic)
   .put(adminController.updateHealthTopic)
 router.route('/articles').get(adminController.getAllArticles).post(adminController.createArticle)
+router.route('/topHealthTopics').get(adminController.getTopHealthTopics)
 
 router
   .route('/articles/:articleId')
