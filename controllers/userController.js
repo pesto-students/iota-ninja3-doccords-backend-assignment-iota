@@ -1,6 +1,29 @@
+/* eslint-disable no-unused-vars */
 const { db } = require('../util/admin')
 const config = require('../util/config')
 const noImg = 'no-img.png'
+const nodemailer = require('nodemailer')
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     type: 'OAuth2',
+//     user: process.env.MAIL_USERNAME,
+//     pass: process.env.MAIL_PASSWORD,
+//     clientId: process.env.OAUTH_CLIENTID,
+//     clientSecret: process.env.OAUTH_CLIENT_SECRET,
+//     refreshToken: process.env.OAUTH_REFRESH_TOKEN
+//   }
+// })
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  auth: {
+    user: 'doccords@gmail.com',
+    pass: '123456789qwe$$'
+  }
+})
 exports.getUserDetail = (req, res) => {
   db.doc(`/users/${req.user.decodedToken.uid}`)
     .get()
@@ -191,4 +214,41 @@ exports.deleteProfilesAndDocs = (req, res) => {
     })
   }
   res.status(200).json({ success: true })
+}
+
+exports.shareDocuments = (req, res) => {
+  const documentsList = req.body.documentIds
+  const email = req.body.email
+
+  if (documentsList.length > 0) {
+    documentsList.forEach(async (document) => {
+      const list = await db.doc(`/documents/${document}`).get()
+      console.log(document)
+      console.log(list.data().sharedList)
+      console.log(list.data().sharedList.includes(email))
+      if (!list.data().sharedList.includes(email)) {
+        db.collection('documents')
+          .doc(document)
+          .update({ sharedList: [...list.data().sharedList, email] })
+      }
+    })
+    db.collection('/shares')
+      .add({ documentsList })
+      .then((doc) => {
+        const mailOptions = {
+          from: 'doccords@gmail.com',
+          to: email,
+          subject: 'This mail is from doccords',
+          text: `Hi from your nodemailer project ${doc.id}`
+        }
+        transporter.sendMail(mailOptions, function (err, data) {
+          if (err) {
+            console.log('Error ' + err)
+          } else {
+            console.log('Email sent successfully')
+          }
+        })
+        res.status(200).json({ success: true })
+      })
+  }
 }

@@ -16,6 +16,7 @@ router
 router.route('/profiles/:profileId').put(userController.updateProfile)
 
 router.route('/documents').get(userController.getAllDocumentsByUser).post(userController.createDocument)
+router.route('/documents/share').post(userController.shareDocuments)
 
 router.route('/upload/file').post(uploader.single('image'), imageUploader)
 module.exports = router
