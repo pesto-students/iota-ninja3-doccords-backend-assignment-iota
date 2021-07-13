@@ -4,6 +4,7 @@ const config = require('../util/config')
 const noImg = 'no-img.png'
 const nodemailer = require('nodemailer')
 const Email = require('email-templates')
+const { sendNotificationToClient } = require('../util/notify')
 // const transporter = nodemailer.createTransport({
 //   service: 'gmail',
 //   auth: {
@@ -51,7 +52,8 @@ exports.createUser = (req, res) => {
   const newUser = {
     profileName: req.body.profileName,
     profilePic:
-      req.body.profilePic || `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`,
+      req.body.profilePic ||
+      `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`,
     email: req.body.email,
     phone: req.body.phone,
     profileType: 'free'
@@ -77,6 +79,31 @@ exports.createUser = (req, res) => {
       } else {
         res.status(404).json({ user: 'user not found' })
       }
+    })
+    .catch((err) => {
+      console.log(err)
+      res.status(500).json({ general: err.message })
+    })
+}
+
+exports.updateUser = (req, res) => {
+  const nToken = req.body.token
+  db.doc(`/users/${req.user.decodedToken.uid}`)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ status: false, data: 'user not found' })
+      } else {
+        const notificationTokens = doc.data().notificationTokens || []
+        if (notificationTokens.includes(nToken)) {
+          return res.status(200).json({ status: true, data: 'no need to update' })
+        }
+        notificationTokens.push(nToken)
+        return doc.ref.update({ notificationTokens })
+      }
+    })
+    .then(() => {
+      return res.status(200).json({ status: true, data: 'updated successfully' })
     })
     .catch((err) => {
       console.log(err)
@@ -197,12 +224,23 @@ exports.createDocument = (req, res) => {
     healthTopicId: req.body.healthTopicId,
     userId: req.user.decodedToken.uid,
     profileId: req.body.profileId,
-    sharedList: []
+    sharedList: [],
+    suggestedTopic: req.body.suggestedTopic
   }
   db.collection('/documents')
     .add(newDocument)
     .then((doc) => {
       newDocument.documentId = doc.id
+      if (
+        newDocument.healthTopicId === 'none' &&
+        newDocument.suggestedTopic.trim() !== ''
+      ) {
+        db.collection('/suggestedTopics').add({
+          documentId: doc.id,
+          suggestedTopic: newDocument.suggestedTopic,
+          status: 'pending'
+        })
+      }
       res.status(201).json({ data: newDocument, success: true })
     })
     .catch((err) => {
@@ -310,5 +348,84 @@ exports.getTopHealthTopicsByUser = (req, res) => {
     .catch((err) => {
       console.error(err)
       res.status(500).json({ error: err.code })
+    })
+}
+exports.updateAccess = (req, res) => {
+  const { documentId, sharedList } = req.body
+  console.log(documentId, sharedList)
+  db.doc(`/documents/${documentId}`)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: 'Document not found', success: false })
+      }
+      return doc.ref.update({ sharedList })
+    })
+    .then(() => {
+      res.status(200).json({ success: true })
+    })
+    .catch((err) => {
+      console.log(err)
+      res.status(500).json({ error: 'Something went wrong' })
+    })
+}
+
+exports.deleteDocuments = (req, res) => {
+  const docList = req.body.documentIds
+  console.log(req.body)
+
+  if (docList.length > 0) {
+    docList.forEach((element) => {
+      db.collection('documents').doc(element).delete()
+    })
+    res.status(200).json({ success: true })
+  }
+}
+
+exports.getSharedDocs = (req, res) => {
+  const id = req.params.shareId
+  console.log(id)
+  db.doc(`/shares/${id}`)
+    .get()
+    .then((doc) => {
+      console.log(doc.data())
+      const documentsList = doc.data().documentsList
+      const sharedList = []
+      db.collection('/documents')
+        .get()
+        .then((data) => {
+          data.forEach((doc) => {
+            if (documentsList.includes(doc.id)) {
+              sharedList.push({ documentId: doc.id, ...doc.data() })
+            }
+          })
+          return res.status(200).json({ documents: sharedList, success: true })
+        })
+        .catch((err) => {
+          res.status(500).json({ error: 'something went wrong' })
+          console.error(err)
+        })
+    })
+}
+
+exports.notifyClient = (req, res) => {
+  db.doc(`/users/${req.user.decodedToken.uid}`)
+    .get()
+    .then((doc) => {
+      const notificationTokens = doc.data().notificationTokens || []
+      if (doc.exists && notificationTokens.length > 0) {
+        console.log('is it calling twice')
+        sendNotificationToClient(notificationTokens, {
+          title: 'Suggested topic',
+          body: 'your suggestion got added please update your document'
+        })
+        res.status(200).json({ success: true })
+      } else {
+        res.status(200).json({ success: true })
+      }
+    })
+    .catch((err) => {
+      res.status(500).json({ error: 'something went wrong' })
+      console.error(err)
     })
 }

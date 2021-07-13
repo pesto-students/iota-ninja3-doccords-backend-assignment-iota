@@ -203,12 +203,112 @@ exports.getTopHealthTopics = (req, res) => {
       const topHealthTopics = {}
       data.forEach((doc) => {
         if (topHealthTopics[doc.data().healthTopicId]) {
-          topHealthTopics[doc.data().healthTopicId] = topHealthTopics[doc.data().healthTopicId] + 1
+          topHealthTopics[doc.data().healthTopicId] =
+            topHealthTopics[doc.data().healthTopicId] + 1
         } else {
           topHealthTopics[doc.data().healthTopicId] = 1
         }
       })
       return res.json(topHealthTopics)
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}
+
+exports.getCompleteDetails = (req, res) => {
+  let usersCount = 0
+  let profilesCount = 0
+  let sharesCount = 0
+  let documentsCount = 0
+  db.collection('users')
+    .get()
+    .then((data) => {
+      usersCount = data.size
+      return new Promise((resolve, reject) => {
+        resolve(usersCount)
+      })
+    })
+    .then(() => {
+      db.collection('profiles')
+        .get()
+        .then((data) => {
+          profilesCount = data.size
+          return new Promise((resolve, reject) => {
+            resolve(profilesCount)
+          })
+        })
+    })
+    .then(() => {
+      db.collection('documents')
+        .get()
+        .then((data) => {
+          documentsCount = data.size
+          return new Promise((resolve, reject) => {
+            resolve(documentsCount)
+          })
+        })
+    })
+    .then(() => {
+      db.collection('shares')
+        .get()
+        .then((data) => {
+          sharesCount = data.size
+          res.status(200).json({
+            data: {
+              sharesCount,
+              documentsCount,
+              profilesCount,
+              usersCount
+            },
+            success: true
+          })
+        })
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}
+exports.getDocumentsDetial = (req, res) => {
+  const template = [
+    { uploadedCount: 0, sharedCount: 0, name: 'January' },
+    { uploadedCount: 0, sharedCount: 0, name: 'February' },
+    { uploadedCount: 0, sharedCount: 0, name: 'March' },
+    { uploadedCount: 0, sharedCount: 0, name: 'April' },
+    { uploadedCount: 0, sharedCount: 0, name: 'May' },
+    { uploadedCount: 0, sharedCount: 0, name: 'June' },
+    { uploadedCount: 0, sharedCount: 0, name: 'July' },
+    { uploadedCount: 0, sharedCount: 0, name: 'August' },
+    { uploadedCount: 0, sharedCount: 0, name: 'September' },
+    { uploadedCount: 0, sharedCount: 0, name: 'October' },
+    { uploadedCount: 0, sharedCount: 0, name: 'November' },
+    { uploadedCount: 0, sharedCount: 0, name: 'December' }
+  ]
+  // const documentsUploaded = JSON.parse(JSON.stringify(template))
+  // const documentsShared = JSON.parse(JSON.stringify(template))
+  // console.log(documentsUploaded)
+  db.collection('documents')
+    .get()
+    .then((data) => {
+      data.forEach((doc) => {
+        template[doc.createTime.toDate().getMonth()].uploadedCount += 1
+      })
+
+      return new Promise((resolve, reject) => {
+        resolve(template)
+      })
+    })
+    .then(() => {
+      db.collection('shares')
+        .get()
+        .then((data) => {
+          data.forEach((doc) => {
+            template[doc.createTime.toDate().getMonth()].sharedCount += 1
+          })
+          res.status(200).json({ data: { template }, success: true })
+        })
     })
     .catch((err) => {
       console.error(err)
