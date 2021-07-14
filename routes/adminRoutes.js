@@ -29,4 +29,5 @@ router
 router.route('/upload/image').post(uploader.single('image'), imageUploader)
 router.route('/dashboard').get(adminController.getCompleteDetails)
 router.route('/dashboard/documents').get(adminController.getDocumentsDetial)
+router.route('/suggestedTopics').get(adminController.getSuggestedTopics)
 module.exports = router

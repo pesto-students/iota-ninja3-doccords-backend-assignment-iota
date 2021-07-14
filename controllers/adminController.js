@@ -1,4 +1,5 @@
 const { db } = require('../util/admin')
+// const { sendNotificationToClient } = require('../util/notify')
 
 exports.createHealthTopic = (req, res) => {
   if (req.body.title.trim() === '' || req.body.picture.trim() === '') {
@@ -15,6 +16,19 @@ exports.createHealthTopic = (req, res) => {
     .then((doc) => {
       const resHealthTopic = newHealthTopic
       resHealthTopic.healthTopicId = doc.id
+      if (req.body.documentId) {
+        db.doc(`/documents/${req.body.documentId}`)
+          .get()
+          .then((doc) => {
+            if (doc.exists) {
+              db.doc(`/users/${doc.data().userId}`)
+                .get()
+                .then((document) => {
+                  // sendNotificationToClient()
+                })
+            }
+          })
+      }
       res.json({ data: resHealthTopic, success: true })
     })
     .catch((err) => {
@@ -309,6 +323,25 @@ exports.getDocumentsDetial = (req, res) => {
           })
           res.status(200).json({ data: { template }, success: true })
         })
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}
+
+exports.getSuggestedTopics = (req, res) => {
+  const suggestedTopics = []
+  db.collection('suggestedTopics')
+    .get()
+    .then((data) => {
+      data.forEach((doc) => {
+        suggestedTopics.push({
+          suggestedTopicId: doc.id,
+          ...doc.data()
+        })
+      })
+      res.status(200).json({ data: suggestedTopics, success: true })
     })
     .catch((err) => {
       console.error(err)
