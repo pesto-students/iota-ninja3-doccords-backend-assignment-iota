@@ -1,5 +1,5 @@
 const { db } = require('../util/admin')
-// const { sendNotificationToClient } = require('../util/notify')
+const { sendNotificationToClient } = require('../util/notify')
 
 exports.createHealthTopic = (req, res) => {
   if (req.body.title.trim() === '' || req.body.picture.trim() === '') {
@@ -24,7 +24,7 @@ exports.createHealthTopic = (req, res) => {
               db.doc(`/users/${doc.data().userId}`)
                 .get()
                 .then((document) => {
-                  // sendNotificationToClient()
+                  sendNotificationToClient()
                 })
             }
           })
