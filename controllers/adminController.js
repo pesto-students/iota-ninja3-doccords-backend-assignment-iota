@@ -21,10 +21,21 @@ exports.createHealthTopic = (req, res) => {
           .get()
           .then((doc) => {
             if (doc.exists) {
+              db.doc(`/suggestedTopics/${req.body.suggestedTopicId}`)
+                .get()
+                .then((doc) => {
+                  if (!doc.exists) {
+                    return res.status(404).json({ error: 'suggestion not found' })
+                  }
+                  doc.ref.update({ status: 'approved' })
+                })
               db.doc(`/users/${doc.data().userId}`)
                 .get()
                 .then((document) => {
-                  sendNotificationToClient()
+                  sendNotificationToClient(document.data().notificationTokens, {
+                    title: 'Suggested topic got added',
+                    body: `Admin added ${req.body.title} you can use it in your document`
+                  })
                 })
             }
           })
@@ -342,6 +353,23 @@ exports.getSuggestedTopics = (req, res) => {
         })
       })
       res.status(200).json({ data: suggestedTopics, success: true })
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}
+exports.declineHealthTopic = (req, res) => {
+  db.doc(`/suggestedTopics/${req.body.suggestedTopicId}`)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: 'suggestion not found' })
+      }
+      return doc.ref.update({ status: 'declined' })
+    })
+    .then(() => {
+      res.status(200).json({ success: true })
     })
     .catch((err) => {
       console.error(err)
