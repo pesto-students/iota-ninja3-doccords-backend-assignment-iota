@@ -360,7 +360,8 @@ exports.getSuggestedTopics = (req, res) => {
     })
 }
 exports.declineHealthTopic = (req, res) => {
-  db.doc(`/suggestedTopics/${req.body.suggestedTopicId}`)
+  const { suggestedTopicId, documentId } = req.body
+  db.doc(`/suggestedTopics/${suggestedTopicId}`)
     .get()
     .then((doc) => {
       if (!doc.exists) {
@@ -369,6 +370,18 @@ exports.declineHealthTopic = (req, res) => {
       return doc.ref.update({ status: 'declined' })
     })
     .then(() => {
+      db.doc(`/documents/${documentId}`)
+        .get()
+        .then((doc) => {
+          db.doc(`/users/${doc.data().userId}`)
+            .get()
+            .then((document) => {
+              sendNotificationToClient(document.data().notificationTokens, {
+                title: 'Suggested topic got declined',
+                body: 'Admin declined your suggestion'
+              })
+            })
+        })
       res.status(200).json({ success: true })
     })
     .catch((err) => {
