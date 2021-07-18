@@ -10,10 +10,8 @@ module.exports = async (req, res, next) => {
       res.status(400).json({ message: 'failed', success: false })
     }
 
-    // Create new blob in the bucket referencing the file
     const blob = bucket.file(`${req.file.originalname}_${currentTime}`)
 
-    // Create writable stream and specifying file mimetype
     const blobWriter = blob.createWriteStream({
       metadata: {
         contentType: req.file.mimetype,
@@ -25,7 +23,9 @@ module.exports = async (req, res, next) => {
 
     blobWriter.on('finish', () => {
       // Assembling public URL for accessing the file via HTTP
-      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURI(blob.name)}?alt=media`
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${
+        bucket.name
+      }/o/${encodeURI(blob.name)}?alt=media`
 
       // Return the file name and its public URL
       res.status(200).send({ fileName: req.file.originalname, fileLocation: publicUrl })

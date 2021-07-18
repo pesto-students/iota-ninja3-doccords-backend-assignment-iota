@@ -21,10 +21,21 @@ exports.createHealthTopic = (req, res) => {
           .get()
           .then((doc) => {
             if (doc.exists) {
+              db.doc(`/suggestedTopics/${req.body.suggestedTopicId}`)
+                .get()
+                .then((doc) => {
+                  if (!doc.exists) {
+                    return res.status(404).json({ error: 'suggestion not found' })
+                  }
+                  doc.ref.update({ status: 'approved' })
+                })
               db.doc(`/users/${doc.data().userId}`)
                 .get()
                 .then((document) => {
-                  sendNotificationToClient()
+                  sendNotificationToClient(document.data().notificationTokens, {
+                    title: 'Suggested topic got added',
+                    body: `Admin added ${req.body.title} you can use it in your document`
+                  })
                 })
             }
           })
@@ -141,8 +152,6 @@ exports.getAllArticles = (req, res) => {
     .then((data) => {
       const articles = []
       data.forEach((doc) => {
-        console.log(doc.data().healthTopicId)
-
         articles.push({
           articleId: doc.id,
           title: doc.data().title,
@@ -300,9 +309,7 @@ exports.getDocumentsDetial = (req, res) => {
     { uploadedCount: 0, sharedCount: 0, name: 'November' },
     { uploadedCount: 0, sharedCount: 0, name: 'December' }
   ]
-  // const documentsUploaded = JSON.parse(JSON.stringify(template))
-  // const documentsShared = JSON.parse(JSON.stringify(template))
-  // console.log(documentsUploaded)
+
   db.collection('documents')
     .get()
     .then((data) => {
@@ -342,6 +349,36 @@ exports.getSuggestedTopics = (req, res) => {
         })
       })
       res.status(200).json({ data: suggestedTopics, success: true })
+    })
+    .catch((err) => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}
+exports.declineHealthTopic = (req, res) => {
+  const { suggestedTopicId, documentId } = req.body
+  db.doc(`/suggestedTopics/${suggestedTopicId}`)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ error: 'suggestion not found' })
+      }
+      return doc.ref.update({ status: 'declined' })
+    })
+    .then(() => {
+      db.doc(`/documents/${documentId}`)
+        .get()
+        .then((doc) => {
+          db.doc(`/users/${doc.data().userId}`)
+            .get()
+            .then((document) => {
+              sendNotificationToClient(document.data().notificationTokens, {
+                title: 'Suggested topic got declined',
+                body: 'Admin declined your suggestion'
+              })
+            })
+        })
+      res.status(200).json({ success: true })
     })
     .catch((err) => {
       console.error(err)

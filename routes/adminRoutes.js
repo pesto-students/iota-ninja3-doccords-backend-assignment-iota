@@ -1,6 +1,5 @@
 const express = require('express')
 const { uploader } = require('../multerSetup')
-// const fileUploader = require('../util/fileUploader')
 const imageUploader = require('../util/imageUploader')
 const adminController = require('./../controllers/adminController')
 
@@ -29,5 +28,8 @@ router
 router.route('/upload/image').post(uploader.single('image'), imageUploader)
 router.route('/dashboard').get(adminController.getCompleteDetails)
 router.route('/dashboard/documents').get(adminController.getDocumentsDetial)
-router.route('/suggestedTopics').get(adminController.getSuggestedTopics)
+router
+  .route('/suggestedTopics')
+  .get(adminController.getSuggestedTopics)
+  .put(adminController.declineHealthTopic)
 module.exports = router

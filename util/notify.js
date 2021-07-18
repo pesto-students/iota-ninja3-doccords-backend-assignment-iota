@@ -1,7 +1,5 @@
 const { messaging } = require('./admin')
 exports.sendNotificationToClient = (tokens, notification) => {
-  console.log(tokens)
-  console.log('is it calling twice fun')
   // Send a message to the devices corresponding to the provided
   // registration tokens.
   messaging

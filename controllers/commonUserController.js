@@ -7,8 +7,6 @@ exports.getAllArticles = (req, res) => {
     .then((data) => {
       const articles = []
       data.forEach((doc) => {
-        console.log(doc.data().healthTopicId)
-
         articles.push({
           articleId: doc.id,
           title: doc.data().title,
@@ -45,5 +43,34 @@ exports.getAllHealthTopics = (req, res) => {
     .catch((err) => {
       console.error(err)
       res.status(500).json({ error: err.code })
+    })
+}
+
+exports.getSharedDocs = (req, res) => {
+  const id = req.body.shareId
+  const email = req.body.shareEmail
+  let filteredList = []
+  console.log(id)
+  db.doc(`/shares/${id}`)
+    .get()
+    .then((doc) => {
+      console.log(doc.data())
+      const documentsList = doc.data().documentsList
+      const sharedList = []
+      db.collection('/documents')
+        .get()
+        .then((data) => {
+          data.forEach((doc) => {
+            if (documentsList.includes(doc.id)) {
+              sharedList.push({ documentId: doc.id, ...doc.data() })
+            }
+            filteredList = sharedList.filter((item) => item.sharedList.includes(email))
+          })
+          return res.status(200).json({ documents: filteredList, success: true })
+        })
+        .catch((err) => {
+          res.status(500).json({ error: 'something went wrong' })
+          console.error(err)
+        })
     })
 }
