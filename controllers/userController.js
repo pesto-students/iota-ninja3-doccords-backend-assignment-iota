@@ -5,25 +5,15 @@ const noImg = 'no-img.png'
 const nodemailer = require('nodemailer')
 const Email = require('email-templates')
 const { sendNotificationToClient } = require('../util/notify')
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//     type: 'OAuth2',
-//     user: process.env.MAIL_USERNAME,
-//     pass: process.env.MAIL_PASSWORD,
-//     clientId: process.env.OAUTH_CLIENTID,
-//     clientSecret: process.env.OAUTH_CLIENT_SECRET,
-//     refreshToken: process.env.OAUTH_REFRESH_TOKEN
-//   }
-// })
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  requireTLS: true,
+  service: 'gmail',
   auth: {
-    user: 'doccords@gmail.com',
-    pass: '123456789qwe$$'
+    type: 'OAuth2',
+    user: process.env.MAIL_USERNAME,
+    pass: process.env.MAIL_PASSWORD,
+    clientId: process.env.OAUTH_CLIENTID,
+    clientSecret: process.env.OAUTH_CLIENT_SECRET,
+    refreshToken: process.env.OAUTH_REFRESH_TOKEN
   }
 })
 
@@ -68,9 +58,6 @@ exports.createUser = (req, res) => {
       }
     })
     .then(() => {
-      // const { profileName, profilePic, profileType } = newUser
-      // console.log(doc.data())
-      // return res.status(201).json({ profileName, profilePic, profileType })
       return db.doc(`/users/${req.user.decodedToken.uid}`).get()
     })
     .then((doc) => {
@@ -134,17 +121,6 @@ exports.createProfile = (req, res) => {
     .then((doc) => {
       const resProfile = newProfileData
       resProfile.profileId = doc.id
-      // if (req.body.document.link) {
-      //   const newDocumentData = {
-      //     name: req.body.document.name,
-      //     link: req.body.document.link,
-      //     healthTopicId: req.body.document.healthTopicId,
-      //     userId: req.user.decodedToken.uid,
-      //     profileId: doc.id,
-      //     sharedList: []
-      //   }
-      //   db.collection('/documents').add(newDocumentData)
-      // }
       res.status(201).json({ data: resProfile, success: true })
     })
     .catch((err) => {
@@ -252,7 +228,6 @@ exports.createDocument = (req, res) => {
 exports.deleteProfilesAndDocs = (req, res) => {
   const profileList = req.body.profiles
   const docList = req.body.documents
-  console.log(req.body)
   if (profileList.length > 0) {
     profileList.forEach((element) => {
       db.collection('profiles').doc(element).delete()
@@ -283,45 +258,34 @@ exports.shareDocuments = (req, res) => {
       .add({ documentsList })
       .then((doc) => {
         let name = 'ela'
-        // const mailOptions = {
-        //   from: 'doccords@gmail.com',
-        //   to: email,
-        //   subject: 'This mail is from doccords',
-        //   text: `Hi from your nodemailer project ${doc.id}`
-        // }
-        // transporter.sendMail(mailOptions, function (err, data) {
-        //   if (err) {
-        //     console.log('Error ' + err)
-        //   } else {
-        //     console.log('Email sent successfully')
-        //   }
-        // })
+        const shareId = doc.id
+
         db.doc(`/users/${req.user.decodedToken.uid}`)
           .get()
           .then((doc) => {
             if (doc.exists) {
               name = doc.data().profileName
+              emailTemplate
+                .send({
+                  template: 'share',
+                  message: {
+                    to: email
+                  },
+                  locals: {
+                    name,
+                    count: documentsList.length,
+                    id: shareId,
+                    email
+                  }
+                })
+                .then(() => {
+                  return res.status(200).json({ success: true })
+                })
+                .catch('Error email', console.error)
             } else {
               res.status(404).json({ user: 'usr not found' })
             }
           })
-        emailTemplate
-          .send({
-            template: 'share',
-            message: {
-              to: email
-            },
-            locals: {
-              name,
-              count: documentsList.length,
-              id: doc.id
-            }
-          })
-          .then(() => {
-            console.log('success email')
-            return res.status(200).json({ success: true })
-          })
-          .catch('Error email', console.error)
         // return res.status(200).json({ success: true })
       })
   }
@@ -352,7 +316,6 @@ exports.getTopHealthTopicsByUser = (req, res) => {
 }
 exports.updateAccess = (req, res) => {
   const { documentId, sharedList } = req.body
-  console.log(documentId, sharedList)
   db.doc(`/documents/${documentId}`)
     .get()
     .then((doc) => {
@@ -372,7 +335,6 @@ exports.updateAccess = (req, res) => {
 
 exports.deleteDocuments = (req, res) => {
   const docList = req.body.documentIds
-  console.log(req.body)
 
   if (docList.length > 0) {
     docList.forEach((element) => {
@@ -382,39 +344,12 @@ exports.deleteDocuments = (req, res) => {
   }
 }
 
-exports.getSharedDocs = (req, res) => {
-  const id = req.params.shareId
-  console.log(id)
-  db.doc(`/shares/${id}`)
-    .get()
-    .then((doc) => {
-      console.log(doc.data())
-      const documentsList = doc.data().documentsList
-      const sharedList = []
-      db.collection('/documents')
-        .get()
-        .then((data) => {
-          data.forEach((doc) => {
-            if (documentsList.includes(doc.id)) {
-              sharedList.push({ documentId: doc.id, ...doc.data() })
-            }
-          })
-          return res.status(200).json({ documents: sharedList, success: true })
-        })
-        .catch((err) => {
-          res.status(500).json({ error: 'something went wrong' })
-          console.error(err)
-        })
-    })
-}
-
 exports.notifyClient = (req, res) => {
   db.doc(`/users/${req.user.decodedToken.uid}`)
     .get()
     .then((doc) => {
       const notificationTokens = doc.data().notificationTokens || []
       if (doc.exists && notificationTokens.length > 0) {
-        console.log('is it calling twice')
         sendNotificationToClient(notificationTokens, {
           title: 'Suggested topic',
           body: 'your suggestion got added please update your document'

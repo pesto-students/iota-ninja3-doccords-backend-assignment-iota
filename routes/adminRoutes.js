@@ -1,6 +1,5 @@
 const express = require('express')
 const { uploader } = require('../multerSetup')
-// const fileUploader = require('../util/fileUploader')
 const imageUploader = require('../util/imageUploader')
 const adminController = require('./../controllers/adminController')
 

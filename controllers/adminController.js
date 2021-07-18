@@ -152,8 +152,6 @@ exports.getAllArticles = (req, res) => {
     .then((data) => {
       const articles = []
       data.forEach((doc) => {
-        console.log(doc.data().healthTopicId)
-
         articles.push({
           articleId: doc.id,
           title: doc.data().title,
@@ -311,9 +309,7 @@ exports.getDocumentsDetial = (req, res) => {
     { uploadedCount: 0, sharedCount: 0, name: 'November' },
     { uploadedCount: 0, sharedCount: 0, name: 'December' }
   ]
-  // const documentsUploaded = JSON.parse(JSON.stringify(template))
-  // const documentsShared = JSON.parse(JSON.stringify(template))
-  // console.log(documentsUploaded)
+
   db.collection('documents')
     .get()
     .then((data) => {
